@@ -2,9 +2,9 @@
 
 const config = {
   answer: "Hello World!",
-  initialLength: 5,
-  populationSize: 10,
-  maxGenerations: 1,
+  initialLength: 5, // used for variable length
+  populationSize: 100000,
+  maxGenerations: 1000,
   mutationChance: 0.5
 };
 
@@ -15,7 +15,7 @@ const min = config.initialLength - half;
 console.log(`max: ${max}`);
 console.log(`min: ${min}`);
 
-const minCharCode = 65;
+const minCharCode = 32;
 const maxCharCode = 126;
 
 console.log(`==========================`);
@@ -47,8 +47,8 @@ const calcFitness = str => {
   // 1 point for each character up to the length of the answer, -1 for each character over
   let score = 0; //chromosome.length - config.answer.length;
 
-  //console.log(`======================`);
-  console.log(`str: ${str}    (${str.length})`);
+  // console.log(`======================`);
+  // console.log(`str: ${str}    (${str.length})`);
 
   if (str.length < config.answer.length) {
     score = str.length - config.answer.length;
@@ -56,33 +56,34 @@ const calcFitness = str => {
     score = config.answer.length - str.length;
   }
 
-  //console.log(`score: ${score}`);
+  // console.log(`*** score: ${score}`);
 
   for (let i = 0; i < str.length; i++) {
     const a = str.charCodeAt(i);
+    const b = config.answer.charCodeAt(i);
 
-    let b = 0;
-    if (config.answer.length > i) {
-      b = config.answer.charCodeAt(i);
-    } else {
-      b = i - config.answer.length;
-      console.log(`*** b: ${b}`);
-    }
+    // let b = 0;
+    // if (config.answer.length > i) {
+    //   b = config.answer.charCodeAt(i);
+    // } else {
+    //   b = i - config.answer.length;
+    //   console.log(`*** b: ${b}, i: ${i}, length: ${config.answer.length}`);
+    // }
 
     if (a === b) {
-      //console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} score: ${1}`);
+      // console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} score: ${1}`);
       score += 1;
     } else if (a < b) {
-      //console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} (a-b) score: ${a - b}`);
+      // console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} (a-b) score: ${a - b}`);
       score += (a - b);
     } else {
-      //console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} (b-a) score: ${b - a}`);
+      // console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} (b-a) score: ${b - a}`);
       score += (b - a);
     }
   }
 
-  console.log(`score: ${score}`);
-  console.log(`-------------------------`);
+  // console.log(`*** score: ${score}`);
+  // console.log(`-------------------------`);
 
   return score;
 };
@@ -96,7 +97,7 @@ const sort = population => {
 };
 
 const kill = population => {
-  const survivals = population.slice(0, Math.floor(population.length / 2));
+  const survivals = population.slice(0, config.populationSize);
   return survivals;
 };
 
@@ -127,20 +128,21 @@ const mate = population => {
 
   const new_population = [];
 
-  for (let i = 0; i < population.length; i += 1) {
+  // console.log(`*** mate ***`);
+  // console.log(`population.length: ${population.length}`);
+  for (let i = 0; i < population.length; i++) {
     const father = population[i].value;
     const mother = population[i + 1] && population[i + 1].value;
 
     if (!mother) {
+      // console.log('no mother')
       continue;
     }
 
-    const child_1 =
-      father.substring(0, Math.floor(father.length / 2)) +
-      mother.substring(Math.floor(mother.length / 2));
-    const child_2 =
-      mother.substring(0, Math.floor(mother.length / 2)) +
-      father.substring(Math.floor(father.length / 2));
+    const child_1 = father.substring(0, Math.floor(father.length / 2)) + mother.substring(Math.floor(mother.length / 2));
+    const child_2 = mother.substring(0, Math.floor(mother.length / 2)) + father.substring(Math.floor(father.length / 2));
+
+
 
     // ???
     // new_population.push({ value: father });
@@ -149,22 +151,29 @@ const mate = population => {
     new_population.push({ value: child_2 });
   }
 
+  // console.log(`new_population.length: ${new_population.length}`);
+  // console.log(`*** end mate ***`);
+
+
   return new_population;
 };
 
 const mutate = population => {
   const new_population = population.map(chromosome => {
     let c = chromosome.value;
+    let old = c;
     if (Math.random() < config.mutationChance) {
-      const rIndex = Math.floor(Math.random() * chromosome.length);
+      const rIndex = Math.floor(Math.random() * (chromosome.value.length));
       const rMutation = Math.random() < 0.5 ? -1 : 1;
       let nValue = chromosome.value.charCodeAt(rIndex) + rMutation;
-      nValue = nValue < 0 ? 0 : nValue;
-      nValue = nValue > 255 ? 255 : nValue;
-      c =
-        c.substring(0, rIndex) +
-        String.fromCharCode(nValue) +
-        c.substring(rIndex + 1);
+      nValue = nValue < minCharCode ? minCharCode : nValue;
+      nValue = nValue > maxCharCode ? maxCharCode : nValue;
+      c = c.substring(0, rIndex) + String.fromCharCode(nValue) + c.substring(rIndex + 1);
+
+      if (c.length !== config.answer.length) {
+        console.log(`new string is the wrong length! ${c.length} !== ${config.answer.length} // ${old} ==> ${c} // rIndex: ${rIndex}, nValue: ${nValue}, chromosome.length: ${chromosome.value.length}`);
+        process.exit(1);
+      }
     }
     return {
       value: c,
@@ -177,22 +186,22 @@ const mutate = population => {
 let generation = 0;
 const done = population => {
   const success = population.filter(c => {
-    return c === config.answer;
+    return c.value === config.answer;
   });
   if (success && success.length) {
     console.log(`Done!`);
     console.log(`Generation: ${generation}`);
     console.log(success[0].value);
-    console.log(success[0].fitness);
+    console.log(calcFitness(success[0].value));
     return true;
   }
 
-  if (generation > config.maxGenerations) {
+  if (generation >= config.maxGenerations) {
     console.log(`Failed!`);
     console.log(`Generation: ${generation}`);
     console.log(`Best Found`);
     console.log(population[0].value);
-    console.log(calcFitness(population[0].value));
+    console.log(`fitness: ${calcFitness(population[0].value)}`);
     return true;
   }
 
@@ -205,18 +214,30 @@ const tempLength = config.answer.length;
 const seed = randomSeed(tempLength);
 
 let population = [];
-console.log(`tempLength: ${tempLength}`);
+// console.log(`tempLength: ${tempLength}`);
 for (let i = 0; i < config.populationSize; i++) {
   population.push({ value: randomSeed(tempLength) });
 }
 
-console.log(`population size: ${population.length}`);
+function parseHrtimeToSeconds(str) {
+  const hrtime = process.hrtime(str);
+  let seconds = parseFloat((parseFloat(hrtime[0]) + parseFloat((hrtime[1] / 1e9))).toFixed(3));
+  return seconds;
+}
 
+// console.log(`population size: ${population.length}`);
+
+let tdone = 0, tcalc = 0, tsort = 0, tkill = 0, tmate = 0, tmutate = 0, tgen = 0;
+let t = process.hrtime();
+let g = process.hrtime();
+let tt = process.hrtime();
 while (!done(population)) {
+  tdone += parseHrtimeToSeconds(t)
   generation++;
 
   // console.log(`population: ${JSON.stringify(population)}`);
   // console.log(`first value: ${population[0].value}`);
+  t = process.hrtime();
   const new_population = population.map(p => {
     // console.log(`${ i } ${ p.value.length } ${ p.value }`);
     return {
@@ -224,21 +245,41 @@ while (!done(population)) {
       fitness: calcFitness(p.value)
     };
   });
+  tcalc += parseHrtimeToSeconds(t);
 
-  console.log(`generation: ${generation} --  new_population size: ${new_population.length}`);
+  // console.log(`generation: ${generation} --  new_population size: ${new_population.length}`);
 
+  t = process.hrtime();
   const sorted = sort(new_population);
-  console.log(`generation: ${generation} --  highest fitness: ${sorted[0].fitness} : ${sorted[0].value}`);
+  tsort += parseHrtimeToSeconds(t);
+  tgen = parseHrtimeToSeconds(g);
+  console.log(`${tgen}s\tgeneration: ${generation} --\thighest fitness: ${sorted[0].fitness}\t: ${sorted[0].value}`);
 
+  t = process.hrtime();
   const pruned = kill(sorted);
-  console.log(`pruned down to: ${pruned.length}`);
+  tkill += parseHrtimeToSeconds(t);
+  // console.log(`pruned down to: ${pruned.length}`);
 
+  t = process.hrtime();
   const families = mate(pruned);
-  console.log(`families: ${families.length}`);
+  tmate += parseHrtimeToSeconds(t);
+  // console.log(`families: ${families.length}`);
 
+  t = process.hrtime();
   population = mutate(families);
-  console.log(`population: ${population.length}`);
+  tmutate += parseHrtimeToSeconds(t);
+  // console.log(`population: ${population.length}`);
 }
+
+const ttotal = parseHrtimeToSeconds(tt);
+console.log(config);
+console.log(`total time:\t${ttotal}s`);
+console.log(`tdone:\t\t${tdone}s`);
+console.log(`tcalc:\t\t${tcalc}s`);
+console.log(`tsort:\t\t${tsort}s`);
+console.log(`tkill:\t\t${tkill}s`);
+console.log(`tmate:\t\t${tmate}s`);
+console.log(`tmutate:\t${tmutate}s`);
 
 // for (let i = 0; i < new_population.length; i++) {
 //   console.log(`${ new_population[i].fitness } : ${ new_population[i].value }`);
