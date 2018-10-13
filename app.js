@@ -1,19 +1,19 @@
 "use strict";
 
 const config = {
-  answer: "Hello World!",
-  initialLength: 5, // used for variable length
-  populationSize: 100000,
-  maxGenerations: 1000,
-  mutationChance: 0.5
+  answer: "You get to choose your population size. I picked 20 for mine below, but you could choose 10 or 100 or 10,000 if you want. There are advantages and disadvantages, but as I've said a few times by now: experiment and learn for yourself!",
+  // initialLength: 5, // used for variable length
+  populationSize: 100,
+  maxGenerations: 100000,
+  mutationChance: 0.25
 };
 
 const half = Math.floor(config.initialLength / 2);
 const max = config.initialLength + half;
 const min = config.initialLength - half;
 
-console.log(`max: ${max}`);
-console.log(`min: ${min}`);
+// console.log(`max: ${max}`);
+// console.log(`min: ${min}`);
 
 const minCharCode = 32;
 const maxCharCode = 126;
@@ -50,11 +50,11 @@ const calcFitness = str => {
   // console.log(`======================`);
   // console.log(`str: ${str}    (${str.length})`);
 
-  if (str.length < config.answer.length) {
-    score = str.length - config.answer.length;
-  } else if (str.length > config.answer.length) {
-    score = config.answer.length - str.length;
-  }
+  // if (str.length < config.answer.length) {
+  //   score = str.length - config.answer.length;
+  // } else if (str.length > config.answer.length) {
+  //   score = config.answer.length - str.length;
+  // }
 
   // console.log(`*** score: ${score}`);
 
@@ -82,6 +82,23 @@ const calcFitness = str => {
     }
   }
 
+  // const arr = str.split('');
+  // score = arr.reduce((p, c, i) => {
+  //   const a = c.charCodeAt(0);
+  //   const b = config.answer.charCodeAt(i);
+
+  //   if (a === b) {
+  //     // console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} score: ${1}`);
+  //     return p + 1;
+  //   } else if (a < b) {
+  //     // console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} (a-b) score: ${a - b}`);
+  //     return p + (a - b);
+  //   } else {
+  //     // console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} (b-a) score: ${b - a}`);
+  //     return p + (b - a);
+  //   }
+  // }, 0);
+
   // console.log(`*** score: ${score}`);
   // console.log(`-------------------------`);
 
@@ -102,30 +119,6 @@ const kill = population => {
 };
 
 const mate = population => {
-  // const new_population = []
-
-  // for (let i = 0; i < population.length; i += 2) {
-  //   const father = population[i].value;
-  //   const mother = population[i + 1] && population[i + 1].value;
-
-  //   if (!mother) {
-  //     continue;
-  //   }
-
-  //   const ave_length = Math.floor((father.length + mother.length) / 2);
-
-  //   const child_1 = father.substring(0, Math.floor(father.length / 2)) + mother.substring(Math.floor(mother.length / 2));
-  //   const child_2 = mother.substring(0, Math.floor(mother.length / 2)) + father.substring(Math.floor(father.length / 2));
-
-  //   // ???
-  //   // new_population.push({ value: father });
-  //   // new_population.push({ value: mother });
-  //   new_population.push({ value: child_1 });
-  //   new_population.push({ value: child_2 });
-  // }
-
-  // return [mutate(new_population)];
-
   const new_population = [];
 
   // console.log(`*** mate ***`);
@@ -141,8 +134,6 @@ const mate = population => {
 
     const child_1 = father.substring(0, Math.floor(father.length / 2)) + mother.substring(Math.floor(mother.length / 2));
     const child_2 = mother.substring(0, Math.floor(mother.length / 2)) + father.substring(Math.floor(father.length / 2));
-
-
 
     // ???
     // new_population.push({ value: father });
@@ -189,7 +180,7 @@ const done = population => {
     return c.value === config.answer;
   });
   if (success && success.length) {
-    console.log(`Done!`);
+    console.log(`\nDone!`);
     console.log(`Generation: ${generation}`);
     console.log(success[0].value);
     console.log(calcFitness(success[0].value));
@@ -197,7 +188,7 @@ const done = population => {
   }
 
   if (generation >= config.maxGenerations) {
-    console.log(`Failed!`);
+    console.log(`\nFailed!`);
     console.log(`Generation: ${generation}`);
     console.log(`Best Found`);
     console.log(population[0].value);
@@ -208,6 +199,13 @@ const done = population => {
   return false;
 };
 
+
+function parseHrtimeToSeconds(str) {
+  const hrtime = process.hrtime(str);
+  let seconds = parseFloat((parseFloat(hrtime[0]) + parseFloat((hrtime[1] / 1e9))).toFixed(3));
+  return seconds;
+}
+
 // ==================================================
 // will try to get a constant length working first
 const tempLength = config.answer.length;
@@ -217,12 +215,6 @@ let population = [];
 // console.log(`tempLength: ${tempLength}`);
 for (let i = 0; i < config.populationSize; i++) {
   population.push({ value: randomSeed(tempLength) });
-}
-
-function parseHrtimeToSeconds(str) {
-  const hrtime = process.hrtime(str);
-  let seconds = parseFloat((parseFloat(hrtime[0]) + parseFloat((hrtime[1] / 1e9))).toFixed(3));
-  return seconds;
 }
 
 // console.log(`population size: ${population.length}`);
@@ -253,7 +245,7 @@ while (!done(population)) {
   const sorted = sort(new_population);
   tsort += parseHrtimeToSeconds(t);
   tgen = parseHrtimeToSeconds(g);
-  console.log(`${tgen}s\tgeneration: ${generation} --\thighest fitness: ${sorted[0].fitness}\t: ${sorted[0].value}`);
+
 
   t = process.hrtime();
   const pruned = kill(sorted);
@@ -269,6 +261,10 @@ while (!done(population)) {
   population = mutate(families);
   tmutate += parseHrtimeToSeconds(t);
   // console.log(`population: ${population.length}`);
+
+  process.stdout.clearLine();
+  process.stdout.cursorTo(0);
+  process.stdout.write(`${tgen}s\tgeneration: ${generation} --\thighest fitness: ${sorted[0].fitness}\t: ${sorted[0].value}`);
 }
 
 const ttotal = parseHrtimeToSeconds(tt);
@@ -280,14 +276,3 @@ console.log(`tsort:\t\t${tsort}s`);
 console.log(`tkill:\t\t${tkill}s`);
 console.log(`tmate:\t\t${tmate}s`);
 console.log(`tmutate:\t${tmutate}s`);
-
-// for (let i = 0; i < new_population.length; i++) {
-//   console.log(`${ new_population[i].fitness } : ${ new_population[i].value }`);
-// }
-
-/*
-console.log(`================= `);
-for (let i = 0; i < 256; i++) {
-  console.log(`${ i }: ${ String.fromCharCode(i) }`);
-}
-*/
