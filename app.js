@@ -1,19 +1,19 @@
 "use strict";
 
 const config = {
-  answer: "You get to choose your population size. I picked 20 for mine below, but you could choose 10 or 100 or 10,000 if you want. There are advantages and disadvantages, but as I've said a few times by now: experiment and learn for yourself!",
-  // initialLength: 5, // used for variable length
+  answer: "Hello World",
+  initialLength: 50, // used for variable length
   populationSize: 100,
-  maxGenerations: 100000,
-  mutationChance: 0.25
+  maxGenerations: 10000,
+  mutationChance: 0.5
 };
 
 const half = Math.floor(config.initialLength / 2);
 const max = config.initialLength + half;
 const min = config.initialLength - half;
 
-// console.log(`max: ${max}`);
-// console.log(`min: ${min}`);
+console.log(`max: ${max}`);
+console.log(`min: ${min}`);
 
 const minCharCode = 32;
 const maxCharCode = 126;
@@ -32,6 +32,7 @@ console.log(`==========================`);
 
 const randomSeed = length => {
   let l = length || config.initialLength + Math.floor(Math.random() * (max - min + 1)) + min;
+  // console.log(l);
   let seed = "";
   while (l--) {
     const num = Math.floor(Math.random() * (maxCharCode - minCharCode + 1)) + minCharCode;
@@ -44,31 +45,31 @@ const randomSeed = length => {
 
 // higher is better
 const calcFitness = str => {
-  // 1 point for each character up to the length of the answer, -1 for each character over
-  let score = 0; //chromosome.length - config.answer.length;
+
+  let score = 0;
 
   // console.log(`======================`);
   // console.log(`str: ${str}    (${str.length})`);
 
-  // if (str.length < config.answer.length) {
-  //   score = str.length - config.answer.length;
-  // } else if (str.length > config.answer.length) {
-  //   score = config.answer.length - str.length;
-  // }
+  
+  if (str.length < config.answer.length) {
+    score = (str.length * 10) - config.answer.length;
+  } else if (str.length > config.answer.length) {
+    score = (config.answer.length * 10) - str.length;
+  }
 
-  // console.log(`*** score: ${score}`);
+  // console.log(`*** s: ${str.length} c: ${config.answer.length} score: ${score}`);
 
   for (let i = 0; i < str.length; i++) {
     const a = str.charCodeAt(i);
-    const b = config.answer.charCodeAt(i);
 
-    // let b = 0;
-    // if (config.answer.length > i) {
-    //   b = config.answer.charCodeAt(i);
-    // } else {
-    //   b = i - config.answer.length;
-    //   console.log(`*** b: ${b}, i: ${i}, length: ${config.answer.length}`);
-    // }
+    let b = 0;
+    if (config.answer.length > i) {
+      b = config.answer.charCodeAt(i);
+    } else {
+      b = -1;// i - config.answer.length;
+      // console.log(`*** b: ${b}, i: ${i}, length: ${config.answer.length}`);
+    }
 
     if (a === b) {
       // console.log(`a: (${String.fromCharCode(a)}) ${a} b: (${String.fromCharCode(b)}) ${b} score: ${1}`);
@@ -154,17 +155,34 @@ const mutate = population => {
     let c = chromosome.value;
     let old = c;
     if (Math.random() < config.mutationChance) {
-      const rIndex = Math.floor(Math.random() * (chromosome.value.length));
-      const rMutation = Math.random() < 0.5 ? -1 : 1;
-      let nValue = chromosome.value.charCodeAt(rIndex) + rMutation;
-      nValue = nValue < minCharCode ? minCharCode : nValue;
-      nValue = nValue > maxCharCode ? maxCharCode : nValue;
-      c = c.substring(0, rIndex) + String.fromCharCode(nValue) + c.substring(rIndex + 1);
 
-      if (c.length !== config.answer.length) {
-        console.log(`new string is the wrong length! ${c.length} !== ${config.answer.length} // ${old} ==> ${c} // rIndex: ${rIndex}, nValue: ${nValue}, chromosome.length: ${chromosome.value.length}`);
-        process.exit(1);
+      if (Math.random() < config.mutationChance) {
+        // character change
+        const rIndex = Math.floor(Math.random() * (chromosome.value.length));
+        const rMutation = Math.random() < 0.5 ? -1 : 1;
+        let nValue = chromosome.value.charCodeAt(rIndex) + rMutation;
+        nValue = nValue < minCharCode ? minCharCode : nValue;
+        nValue = nValue > maxCharCode ? maxCharCode : nValue;
+        c = c.substring(0, rIndex) + String.fromCharCode(nValue) + c.substring(rIndex + 1);
+
+        // if (c.length !== config.answer.length) {
+        //   console.log(`new string is the wrong length! ${c.length} !== ${config.answer.length} // ${old} ==> ${c} // rIndex: ${rIndex}, nValue: ${nValue}, chromosome.length: ${chromosome.value.length}`);
+        //   process.exit(1);
+        // }
+      } else {
+        // length change
+        const rMutation = Math.random() < 0.5 ? -1 : 1;
+        if (rMutation === -1) {
+          // decrease in length
+          c = c.slice(0, -1);
+        } else {
+          // increase in length
+          const num = Math.floor(Math.random() * (maxCharCode - minCharCode + 1)) + minCharCode;
+          const s = String.fromCharCode(num);
+          c = c + s;
+        }          
       }
+      
     }
     return {
       value: c,
@@ -208,16 +226,17 @@ function parseHrtimeToSeconds(str) {
 
 // ==================================================
 // will try to get a constant length working first
-const tempLength = config.answer.length;
-const seed = randomSeed(tempLength);
+// const tempLength = config.answer.length;
+// const seed = randomSeed(tempLength);
+// const seed = randomSeed();
 
 let population = [];
 // console.log(`tempLength: ${tempLength}`);
 for (let i = 0; i < config.populationSize; i++) {
-  population.push({ value: randomSeed(tempLength) });
+  population.push({ value: randomSeed() });
 }
 
-// console.log(`population size: ${population.length}`);
+console.log(`population size: ${population.length}`);
 
 let tdone = 0, tcalc = 0, tsort = 0, tkill = 0, tmate = 0, tmutate = 0, tgen = 0;
 let t = process.hrtime();
@@ -262,9 +281,11 @@ while (!done(population)) {
   tmutate += parseHrtimeToSeconds(t);
   // console.log(`population: ${population.length}`);
 
-  process.stdout.clearLine();
-  process.stdout.cursorTo(0);
-  process.stdout.write(`${tgen}s\tgeneration: ${generation} --\thighest fitness: ${sorted[0].fitness}\t: ${sorted[0].value}`);
+  // process.stdout.clearLine();
+  // process.stdout.cursorTo(0);
+  // process.stdout.write(`${tgen}s\tgeneration: ${generation} --\thighest fitness: ${sorted[0].fitness}\t: ${sorted[0].value}`);
+
+  console.log(`${tgen}s\tgeneration: ${generation} --\thighest fitness: ${sorted[0].fitness}\t: ${sorted[0].value}`);
 }
 
 const ttotal = parseHrtimeToSeconds(tt);
