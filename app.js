@@ -1,4 +1,6 @@
-"use strict";
+'use strict';
+
+var args = require('minimist')(process.argv.slice(2));
 
 const config = {
   answer: "Hello World",
@@ -7,6 +9,28 @@ const config = {
   maxGenerations: 10000,
   mutationChance: 0.5
 };
+
+console.dir(args);
+
+if (args.h) {
+  console.log(`usage: node app.js [opts] "[answer]"`);
+  console.log(`\topts:`);
+  console.log(`\t-l, --initialLength\tStarting length of the generated strings (default ${config.initialLength})`);
+  console.log(`\t-s, --populationSize\tMaximum size of the population for each generation (default ${config.populationSize})`);
+  console.log(`\t-m, --maxGenerations\tMaximum number of generations to find the answer (default ${config.maxGenerations})`);
+  console.log(`\t-c, --mutationChance\tChance for an organism to mutate [0-1] (default ${config.mutationChance})`);
+  console.log(`\n\t[answer]\t\tProvide a string value for the application to search for. When reached, the algorithm will exit.`);
+  console.log(`\t\t\t\t(default "${config.answer}")`);
+  process.exit(0);
+}
+
+/* Get config options from command line */
+config.answer = (args._ && Array.isArray(args._) && args._[0] && args._[0].length) ? args._[0] : config.answer;
+config.initialLength = args.l || args.initialLength || config.initialLength;
+config.populationSize = args.s || args.populationSize || config.populationSize;
+config.maxGenerations = args.m || args.maxGenerations || config.maxGenerations;
+config.mutationChange = args.c || args.mutationChance || config.mutationChance;
+
 
 const half = Math.floor(config.initialLength / 2);
 const max = config.initialLength + half;
@@ -48,10 +72,6 @@ const calcFitness = str => {
 
   let score = 0;
 
-  // console.log(`======================`);
-  // console.log(`str: ${str}    (${str.length})`);
-
-  
   if (str.length < config.answer.length) {
     score = (str.length * 10) - config.answer.length;
   } else if (str.length > config.answer.length) {
@@ -67,7 +87,7 @@ const calcFitness = str => {
     if (config.answer.length > i) {
       b = config.answer.charCodeAt(i);
     } else {
-      b = -1;// i - config.answer.length;
+      b = -1;
       // console.log(`*** b: ${b}, i: ${i}, length: ${config.answer.length}`);
     }
 
@@ -180,9 +200,9 @@ const mutate = population => {
           const num = Math.floor(Math.random() * (maxCharCode - minCharCode + 1)) + minCharCode;
           const s = String.fromCharCode(num);
           c = c + s;
-        }          
+        }
       }
-      
+
     }
     return {
       value: c,
